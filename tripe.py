@@ -26,6 +26,26 @@ class Tripe(object):
   def __init__(self):
     self.root = TrieNode()
 
+  def search(self, phrase, exact=False):
+    '''match the phrase'''
+    # tokenize the phrases
+    tokenized = list(tokenize(phrase))
+
+    # search for the first token in the phrase
+    off, stemmed, raw = tokenized[0]
+    instances = self.root.search(stemmed)
+
+    # optionally check the raw version
+    if exact:
+      instances = [instance for instance in instances 
+          if instance.matches_exact(raw)]
+
+    # check the rest of the words in the phrase
+    instances = [instance for instance in instances
+        if instance.matches_phrase(tokenized[1:], exact)]
+
+    return instances
+
   def add(self, text, docid):
     doc = Document(docid, text)
     tokens = list(tokenize(text))
@@ -48,7 +68,7 @@ class Tripe(object):
     #   magic 'Tripe001"
     #   root node offset
     #   14 x 0 for future space
-    file.write(pack('QQQQQQQQQQQQQQQQ', Tripe.MAGIC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    file.write(pack('QQQQQQQQQQQQQQQQ', Tripe.MAGIC, 0, *((0,)*14)))
     # write all of the nodes, get the offset of the root node
     root_off = self.root.write(file)
     # write it to the second place in the file
@@ -63,6 +83,12 @@ class TrieNode(object):
     self.children = {}
     self.dotname = None
     self.offset = 0
+
+  def search(self, term):
+    if term == '':
+      return self.matches
+    else:
+      return self.children[term[0]].search(term[1:])
 
   def add(self, term, value):
     if term == '':
@@ -114,6 +140,30 @@ class TermInstance(object):
     self.next = next # next term instance in the document
     self.dotname = None
     self.offset = 0
+
+  def matches_exact(self, raw):
+    return self.raw == raw
+
+  def matches_phrase(self, phrase, exact=False):
+    instance = self.next
+    for off, stemmed, raw in phrase:
+      # if we run out of words in the document we fail
+      if not instance: return False
+
+      # if the next word in the document doesn't match the next word in the
+      # phrase we fail
+      if exact:
+        if raw != instance.raw:
+          return False
+      else:
+        # FIXME: sucks to re-stem - should we store the stemmed version
+        # at the leaf nodes? that sucks too.
+        if stemmed != stem(instance.raw):
+          return False
+
+      # this word looked good, next please
+      instance = instance.next
+    return True
 
   def __repr__(self):
     return 'TermInstance<%s, off=%s, raw=%s>' % (`self.doc`, self.off, `self.raw`)
