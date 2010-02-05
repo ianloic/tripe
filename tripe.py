@@ -52,7 +52,7 @@ class TripeStore(object):
       mmap_mode = PROT_READ
     if not os.path.exists(filename):
       # create empty file
-      open(filename, 'w').write(pack('Q'*16, MAGIC, 
+      open(filename, 'w').write(pack('Q'*16, MAGIC,
         *((0,)*(HEADERCOUNT-1))))
     # open the file
     self.file = open(filename, open_mode)
@@ -181,7 +181,7 @@ class Tripe(object):
 
     # optionally check the raw version
     if exact:
-      instances = [instance for instance in instances 
+      instances = [instance for instance in instances
           if instance.matches_exact(raw)]
 
     # check the rest of the words in the phrase
@@ -302,7 +302,7 @@ class TermInstance(object):
       else:
         self.next_handle = 0
       self.raw_handle = tripe.store.store_text(raw)
-      handle = tripe.store.store_numbers((doc, offset, self.raw_handle, 
+      handle = tripe.store.store_numbers((doc, offset, self.raw_handle,
         self.next_handle))
     else:
       # load the values
