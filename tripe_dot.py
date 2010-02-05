@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+def escape(s):
+  '''escape a string for .dot'''
+  return s.replace('\\', '\\\\') \
+      .replace('"', '\\"')
+
 def dot(tripe):
   print 'digraph Tripe {'
   nodes = [(tripe.root, '')]
@@ -8,12 +13,13 @@ def dot(tripe):
     print '  N%s[label="%s"]' % (node.handle, prefix)
 
     for name, child in node.children().items():
-      print '  N%s -> N%s [label="%s"]' % (node.handle, child.handle, name)
+      print '  N%s -> N%s [label="%s"]' % (node.handle, child.handle, 
+          escape(name))
       nodes.append((child, prefix+name))
 
     for match in node.matches():
       print '  N%s -> M%s' % (node.handle, match.handle)
-      print '  M%s [label="%s" shape=box]' % (match.handle, match.raw)
+      print '  M%s [label="%s" shape=box]' % (match.handle, escape(match.raw))
       if match.next_handle != 0:
         print '  M%s -> M%s [style=dashed]' % (match.handle, match.next_handle)
 
