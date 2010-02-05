@@ -19,13 +19,13 @@ def tokenize(text):
     yield (off, stem(term), term)
     off = off + len(term) + len(post)
 
-BLOCKSIZE = calcsize('Q') # size of ints
+INTSIZE = calcsize('Q') # size of ints
 HEADERCOUNT = 16 # number of ints in header
-HEADERSIZE = BLOCKSIZE * HEADERCOUNT # size of header in bytes
+HEADERSIZE = INTSIZE * HEADERCOUNT # size of header in bytes
 
 HEADER_MAGIC = 0 # where the magic number resides
-HEADER_ROOT = 1 * BLOCKSIZE # root node
-HEADER_FIRST_FREE = 2 * BLOCKSIZE # first free block
+HEADER_ROOT = 1 * INTSIZE # root node
+HEADER_FIRST_FREE = 2 * INTSIZE # first free block
 
 class TripeStore(object):
   def __init__(self, filename, writable=False):
@@ -47,11 +47,11 @@ class TripeStore(object):
 
   def __load_number(self, offset):
     '''load a number from the map'''
-    return unpack('Q', self.mmap[offset:offset+BLOCKSIZE])[0]
+    return unpack('Q', self.mmap[offset:offset+INTSIZE])[0]
 
   def __store_number(self, offset, number):
     '''store a number in the map'''
-    self.mmap[offset:offset+BLOCKSIZE] = pack('Q', number)
+    self.mmap[offset:offset+INTSIZE] = pack('Q', number)
 
   def __allocate(self, size):
     '''allocate a block of the given size'''
@@ -62,7 +62,7 @@ class TripeStore(object):
       free_size = self.__handle_size(free)
       if free_size > size:
         # found a valid block, remember where it is
-        offset = free - BLOCKSIZE
+        offset = free - INTSIZE
         # remove it from the linked list
         self.__store_number(prev_free, self.__load_number(free))
         break
@@ -73,16 +73,16 @@ class TripeStore(object):
     else:
       # no free blocks, grow the file
       offset = len(self.mmap)
-      self.mmap.resize(offset + BLOCKSIZE + size)
+      self.mmap.resize(offset + INTSIZE + size)
 
     # store the length
     self.__store_number(offset, size)
     # return the offset to put data in
-    return offset + BLOCKSIZE
+    return offset + INTSIZE
 
   def __handle_size(self, handle):
     '''return the size of the handle'''
-    return self.__load_number(handle-BLOCKSIZE)
+    return self.__load_number(handle-INTSIZE)
 
   def __get_handle(self, handle):
     return self.mmap[handle:handle+self.__handle_size(handle)]
@@ -124,7 +124,7 @@ class TripeStore(object):
 
   def load_numbers(self, handle):
     '''fetch numbers stored at a handle'''
-    num_numbers = self.__handle_size(handle) / BLOCKSIZE
+    num_numbers = self.__handle_size(handle) / INTSIZE
     return unpack('Q'*num_numbers, self.__get_handle(handle))
 
   def load_text(self, handle):
