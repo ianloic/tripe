@@ -38,8 +38,8 @@ class TripeStore(object):
       mmap_mode = PROT_READ
     if not os.path.exists(filename):
       # create empty file
-      open(filename, 'w').write(pack('Q'*16, Tripe.MAGIC, 0, 
-        HEADERSIZE, *((0,)*(HEADERCOUNT-3))))
+      open(filename, 'w').write(pack('Q'*16, Tripe.MAGIC, 
+        *((0,)*(HEADERCOUNT-1))))
     # open the file
     self.file = open(filename, open_mode)
     # map the file
@@ -55,19 +55,30 @@ class TripeStore(object):
 
   def __allocate(self, size):
     '''allocate a block of the given size'''
-    # where's the end of the used space?
-    first_free = self.__load_number(HEADER_FIRST_FREE)
-    # where will it come to once we've allocated
-    new_size = first_free + BLOCKSIZE + size
-    # make sure we have enough space
-    if new_size > len(self.mmap):
-      self.mmap.resize(new_size)
-    # store the new end
-    self.__store_number(HEADER_FIRST_FREE, new_size)
+    # where's the first unused thing
+    free = self.__load_number(HEADER_FIRST_FREE)
+    prev_free = HEADER_FIRST_FREE
+    while free != 0:
+      free_size = self.__handle_size(free)
+      if free_size > size:
+        # found a valid block, remember where it is
+        offset = free - BLOCKSIZE
+        # remove it from the linked list
+        self.__store_number(prev_free, self.__load_number(free))
+        break
+      else:
+        # look at the next free block
+        prev_free = free
+        free = self.__load_number(free)
+    else:
+      # no free blocks, grow the file
+      offset = len(self.mmap)
+      self.mmap.resize(offset + BLOCKSIZE + size)
+
     # store the length
-    self.__store_number(first_free, size)
+    self.__store_number(offset, size)
     # return the offset to put data in
-    return first_free + BLOCKSIZE
+    return offset + BLOCKSIZE
 
   def __handle_size(self, handle):
     '''return the size of the handle'''
@@ -123,7 +134,11 @@ class TripeStore(object):
 
   def free(self, handle):
     '''mark a handle as unused'''
-    pass
+    print 'freeing block of size %d' % self.__handle_size(handle)
+    self.store_text('F'*self.__handle_size(handle))
+    # add this block to the end of the free-list
+    self.__store_number(handle, self.__load_number(HEADER_FIRST_FREE))
+    self.__store_number(HEADER_FIRST_FREE, handle)
 
 
 class Tripe(object):
@@ -340,15 +355,15 @@ def dot(tripe):
 
 
 
-tripe = Tripe(TripeStore('/tmp/test.tripe', False))
-#tripe = Tripe(TripeStore('/tmp/test.tripe', True))
-#tripe.add('Hello world', 1)
-#tripe.add('Hello, World', 2)
-#tripe.add('Goodbye, cruel world...', 3)
-#tripe.add('This is a test.', 4)
-#tripe.add('This is not a pipe', 5)
-#tripe.add('Thistle, bristle and whistle!', 6)
-#tripe.add('A bird in the hand is worth two in the bush.', 7)
+#tripe = Tripe(TripeStore('/tmp/test.tripe', False))
+tripe = Tripe(TripeStore('/tmp/test.tripe', True))
+tripe.add('Hello world', 1)
+tripe.add('Hello, World', 2)
+tripe.add('Goodbye, cruel world...', 3)
+tripe.add('This is a test.', 4)
+tripe.add('This is not a pipe', 5)
+tripe.add('Thistle, bristle and whistle!', 6)
+tripe.add('A bird in the hand is worth two in the bush.', 7)
 
 #tripe.write(TripeStore(open('/tmp/test.tripe', 'w')))
 #tripe = Tripe.read(TripeStore(open('/tmp/test.tripe')))
