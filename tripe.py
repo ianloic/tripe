@@ -150,7 +150,7 @@ class TripeStore(object):
 
   def free(self, handle):
     '''mark a handle as unused'''
-    print 'freeing block of size %d' % self.__handle_size(handle)
+    #print 'freeing block of size %d' % self.__handle_size(handle)
     self.store_text('F'*self.__handle_size(handle))
     # add this block to the end of the free-list
     self.__store_number(handle, self.__load_number(HEADER_FIRST_FREE))
@@ -347,19 +347,3 @@ class TermInstance(object):
 
   def __repr__(self):
     return 'TermInstance<doc=%s, offset=%s, raw=%s>' % (`self.doc`, self.offset, `self.raw`)
-
-
-
-
-#tripe = Tripe(TripeStore('/tmp/test.tripe', False))
-tripe = Tripe(TripeStore('/tmp/test.tripe', True))
-tripe.add('Hello world', 1)
-tripe.add('Hello, World', 2)
-tripe.add('Goodbye, cruel world...', 3)
-tripe.add('This is a test.', 4)
-tripe.add('This is not a pipe', 5)
-tripe.add('Thistle, bristle and whistle!', 6)
-tripe.add('A bird in the hand is worth two in the bush.', 7)
-
-#tripe.write(TripeStore(open('/tmp/test.tripe', 'w')))
-#tripe = Tripe.read(TripeStore(open('/tmp/test.tripe')))
