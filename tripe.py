@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 '''Tripe - an information retrieval experiment'''
 
+'''TODO:
+  * use a real stemmer
+  * improve tokenizer
+  * merge TripeStore and Tripe classes
+  * store document metadata
+  * support multiple fields
+  * improve allocator
+  * support document removal
+  * test concurrency (single writer + multi reader)
+  * support prefix searches ('cat*' -> 'cathode', 'cat', 'catatonic')
+  '''
+
 import re, os
 from struct import pack, unpack, calcsize
 from mmap import mmap, MAP_SHARED, PROT_READ, PROT_WRITE
