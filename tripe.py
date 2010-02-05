@@ -39,6 +39,8 @@ HEADER_MAGIC = 0 # where the magic number resides
 HEADER_ROOT = 1 * INTSIZE # root node
 HEADER_FIRST_FREE = 2 * INTSIZE # first free block
 
+MAGIC = unpack('Q', 'Tripe001')[0]
+
 class TripeStore(object):
   def __init__(self, filename, writable=False):
     self.filename = filename
@@ -50,12 +52,14 @@ class TripeStore(object):
       mmap_mode = PROT_READ
     if not os.path.exists(filename):
       # create empty file
-      open(filename, 'w').write(pack('Q'*16, Tripe.MAGIC, 
+      open(filename, 'w').write(pack('Q'*16, MAGIC, 
         *((0,)*(HEADERCOUNT-1))))
     # open the file
     self.file = open(filename, open_mode)
     # map the file
     self.mmap = mmap(self.file.fileno(), 0, MAP_SHARED, mmap_mode)
+    # check the magic number
+    assert self.__load_number(0) == MAGIC
 
   def __load_number(self, offset):
     '''load a number from the map'''
@@ -155,7 +159,6 @@ class TripeStore(object):
 
 class Tripe(object):
   '''a text index'''
-  MAGIC = unpack('Q', 'Tripe001')[0]
   def __init__(self, store):
     self.store = store
     if store.get_root() == 0:
