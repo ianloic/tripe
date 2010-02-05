@@ -1,0 +1,12 @@
+Tripe - a simple inverted index full text search engine
+Copyright 2010 Ian McKellar <http://ian.mckellar.org/>
+Free Software under the GNU General Public License.
+
+This is an attempt to write simple, hopefully relatively easy to understand 
+but fully featured full text indexer. It's not there yet on any of those
+goals, but it does work and it's less than 250 lines of code.
+
+tripe.py - the main library code
+tripe_add.py - utility to add documents to an index
+tripe_search.py - utility to search an index
+tripe_dot.py - utility to visualize an index as a graphviz dot file.
