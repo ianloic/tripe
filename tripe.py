@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-'''Tripe - an information retrieval experiment'''
+'''Tripe - an information retrieval experiment
+Copyright 2010 Ian McKellar <http://ian.mckellar.org/>
+Free Software under the GNU General Public License.
+'''
 
 '''TODO:
   * use a real stemmer
