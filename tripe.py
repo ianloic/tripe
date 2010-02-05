@@ -169,10 +169,6 @@ class Tripe(object):
       self.root.add(stemmed, ti)
       next = ti
 
-  def dot(self):
-    print 'digraph Tripe {'
-    self.root.dot()
-    print '}'
 
 class TrieNode(object):
   '''a node in the trie'''
@@ -203,6 +199,12 @@ class TrieNode(object):
     for key, offset in self.__children():
       if key == name: return TrieNode(self.tripe, offset)
     return None
+
+  def children(self):
+    return dict([(chr(k), TrieNode(self.tripe, v)) for k, v in self.__children()])
+
+  def matches(self):
+    return [TermInstance(self.tripe, handle) for handle in self.__matches()]
 
   def search(self, term):
     if term == '':
@@ -254,17 +256,6 @@ class TrieNode(object):
           self.tripe.store.free(old_children)
       child.add(term[1:], value)
 
-  def dot(self, label=''):
-    if self.dotname:
-      return self.dotname
-    self.dotname = 'N%s' % id(self)
-    print '%s [label="%s"]' % (self.dotname, label)
-    for k, c in self.children.items():
-      print '%s -> %s [label=\"%s\"]' % (self.dotname, c.dot(label+k), k)
-    for m in self.matches:
-      print '%s -> %s' % (self.dotname, m.dot())
-    return self.dotname
-
 
 class TermInstance(object):
   '''an instance of a term in a document'''
@@ -291,8 +282,6 @@ class TermInstance(object):
       self.raw = tripe.store.load_text(self.raw_handle)
       self.__next = None
     self.handle = handle
-
-    self.dotname = None
 
   def next(self):
     if self.__next != None: return self.__next
@@ -329,14 +318,26 @@ class TermInstance(object):
   def __repr__(self):
     return 'TermInstance<doc=%s, offset=%s, raw=%s>' % (`self.doc`, self.offset, `self.raw`)
 
-  def dot(self):
-    if self.dotname:
-      return self.dotname
-    self.dotname = 'M%s' % id(self)
-    print '%s [label=\"%s\" shape=box]' % (self.dotname, self.raw)
-    if self.next:
-      print '%s -> %s [style=dashed]' % (self.dotname, self.next.dot())
-    return self.dotname
+def dot(tripe):
+  print 'digraph Tripe {'
+  nodes = [(tripe.root, '')]
+  while len(nodes) > 0:
+    node, prefix = nodes.pop(0)
+    print '  N%s[label="%s"]' % (node.handle, prefix)
+
+    for name, child in node.children().items():
+      print '  N%s -> N%s [label="%s"]' % (node.handle, child.handle, name)
+      nodes.append((child, prefix+name))
+
+    for match in node.matches():
+      print '  N%s -> M%s' % (node.handle, match.handle)
+      print '  M%s [label="%s" shape=box]' % (match.handle, match.raw)
+      if match.next_handle != 0:
+        print '  M%s -> M%s [style=dashed]' % (match.handle, match.next_handle)
+
+  print '}'
+
+
 
 
 tripe = Tripe(TripeStore('/tmp/test.tripe', False))
@@ -349,6 +350,6 @@ tripe = Tripe(TripeStore('/tmp/test.tripe', False))
 #tripe.add('Thistle, bristle and whistle!', 6)
 #tripe.add('A bird in the hand is worth two in the bush.', 7)
 
-#tripe.dot()
 #tripe.write(TripeStore(open('/tmp/test.tripe', 'w')))
 #tripe = Tripe.read(TripeStore(open('/tmp/test.tripe')))
+#dot(tripe)
